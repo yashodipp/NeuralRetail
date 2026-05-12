@@ -81,7 +81,11 @@ monitor_fig = px.bar(
     x="metric",
     y="value",
     color="value",
-    title="Model & Platform KPIs",
+    title="Model Performance and Platform Monitoring Metrics",
+    labels={
+        "metric": "Monitoring KPI",
+        "value": "Current Value",
+    },
     color_continuous_scale=["#21D4FD", "#FFB703", "#FF5D8F"],
 )
 st.plotly_chart(

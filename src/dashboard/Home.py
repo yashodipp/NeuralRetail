@@ -16,8 +16,6 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.dashboard.theme import inject_global_styles, render_note_box, render_page_header, render_panel_heading, style_figure
 from src.dashboard.utils import apply_global_filters, download_frame, get_service, get_transactions
 
-st.set_page_config(page_title="NeuralRetail", page_icon=":bar_chart:", layout="wide")
-
 inject_global_styles()
 render_page_header("Executive Overview", "A clean control room for revenue, pricing response, and filtered retail performance.")
 
@@ -48,8 +46,12 @@ with chart_col:
         revenue_trend,
         x="date",
         y="revenue",
-        title="Revenue Wave",
+        title="Daily Sales Revenue Trend",
         markers=True,
+        labels={
+            "date": "Date",
+            "revenue": "Sales Revenue ($)",
+        },
         color_discrete_sequence=["#21D4FD"],
     )
     st.plotly_chart(
@@ -74,14 +76,31 @@ with simulator_col:
 regional = filtered.groupby("region", as_index=False).agg(revenue=("revenue", "sum"), quantity=("quantity", "sum"))
 col1, col2 = st.columns(2)
 with col1:
-    regional_fig = px.bar(regional, x="region", y="revenue", title="Revenue by Region", color="region", color_discrete_sequence=["#21D4FD", "#FFB703", "#FF5D8F", "#2DE2A7"])
+    regional_fig = px.bar(
+        regional,
+        x="region",
+        y="revenue",
+        title="Regional Revenue Comparison",
+        color="region",
+        labels={
+            "region": "Sales Region",
+            "revenue": "Revenue ($)",
+        },
+        color_discrete_sequence=["#21D4FD", "#FFB703", "#FF5D8F", "#2DE2A7"],
+    )
     st.plotly_chart(
         style_figure(regional_fig),
         use_container_width=True,
     )
 with col2:
     sku_mix = filtered.groupby("sku", as_index=False).agg(quantity=("quantity", "sum"))
-    sku_mix_fig = px.pie(sku_mix, values="quantity", names="sku", title="SKU Demand Mix", color_discrete_sequence=["#FF5D8F", "#21D4FD", "#FFB703", "#7B61FF"])
+    sku_mix_fig = px.pie(
+        sku_mix,
+        values="quantity",
+        names="sku",
+        title="Sales Volume Share by SKU",
+        color_discrete_sequence=["#FF5D8F", "#21D4FD", "#FFB703", "#7B61FF"],
+    )
     sku_mix_fig.update_traces(hole=0.58, textposition="inside", textinfo="percent+label")
     st.plotly_chart(
         style_figure(sku_mix_fig),

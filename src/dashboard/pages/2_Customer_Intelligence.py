@@ -44,7 +44,14 @@ with col1:
         color="segment_id",
         size="rfm_bubble_size",
         hover_data=["customer_id", "recency"],
-        title="Segment Distribution",
+        title="Customer Value Distribution by Segment",
+        labels={
+            "frequency": "Purchase Frequency",
+            "monetary": "Customer Spend ($)",
+            "segment_id": "Customer Segment",
+            "rfm_bubble_size": "RFM Score",
+            "recency": "Days Since Last Purchase",
+        },
         size_max=30,
         color_discrete_sequence=["#21D4FD", "#FFB703", "#FF5D8F", "#7B61FF", "#2DE2A7", "#FF7F50"],
     )
@@ -58,7 +65,11 @@ with col2:
         x="segment_id",
         y="customers",
         color="segment_id",
-        title="Customers per Segment",
+        title="Customer Count by Segment",
+        labels={
+            "segment_id": "Customer Segment",
+            "customers": "Number of Customers",
+        },
         color_discrete_sequence=["#FF5D8F", "#21D4FD", "#2DE2A7", "#FFB703", "#7B61FF", "#FF7F50"],
     )
     st.plotly_chart(

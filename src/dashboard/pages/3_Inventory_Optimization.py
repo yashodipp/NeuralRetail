@@ -51,7 +51,12 @@ with col1:
         x="sku",
         y="recommended_order_qty",
         color="recommendation",
-        title="Recommended Order Quantity",
+        title="Recommended Reorder Quantity by SKU",
+        labels={
+            "sku": "Product SKU",
+            "recommended_order_qty": "Units to Reorder",
+            "recommendation": "Reorder Status",
+        },
         color_discrete_sequence=["#FF5D8F", "#2DE2A7"],
     )
     st.plotly_chart(
@@ -66,7 +71,14 @@ with col2:
         color="abc_class",
         symbol="xyz_class",
         size="safety_stock",
-        title="Reorder Point vs Current Inventory",
+        title="Current Inventory vs Reorder Point",
+        labels={
+            "reorder_point": "Reorder Point (Units)",
+            "current_inventory": "Current Inventory (Units)",
+            "abc_class": "ABC Category",
+            "xyz_class": "XYZ Category",
+            "safety_stock": "Safety Stock",
+        },
         color_discrete_sequence=["#21D4FD", "#FFB703", "#FF5D8F"],
     )
     st.plotly_chart(

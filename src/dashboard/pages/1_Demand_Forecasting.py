@@ -35,7 +35,8 @@ if history.empty:
     st.warning(f"No historical records are available for {sku} in {region}.")
     st.stop()
 
-forecast = pd.DataFrame(service.forecast_demand(sku, region, horizon_days)["forecast"])
+forecast_payload = service.forecast_demand(sku, region, horizon_days)
+forecast = pd.DataFrame(forecast_payload["forecast"])
 forecast["date"] = pd.to_datetime(forecast["date"])
 avg_next_week = forecast["daily_forecast"].head(7).mean()
 total_month = forecast["monthly_forecast"].tail(1).iloc[0]
@@ -43,12 +44,12 @@ total_month = forecast["monthly_forecast"].tail(1).iloc[0]
 metric1, metric2, metric3 = st.columns(3)
 metric1.metric("Last Observed Daily Demand", f"{history['quantity'].tail(1).iloc[0]:.1f}")
 metric2.metric("Avg Next 7-Day Forecast", f"{avg_next_week:.1f}")
-metric3.metric("Model MAPE", f"{service.forecast_demand(sku, region, horizon_days)['metrics']['mape']:.1f}%")
+metric3.metric("Forecast Accuracy (MAPE)", f"{forecast_payload['metrics']['mape']:.1f}%")
 
 chart_data = history[["date", "quantity"]].rename(columns={"quantity": "value"})
-chart_data["series"] = "historical"
+chart_data["series"] = "Historical Demand"
 forecast_data = forecast[["date", "daily_forecast"]].rename(columns={"daily_forecast": "value"})
-forecast_data["series"] = "forecast"
+forecast_data["series"] = "Forecasted Demand"
 combined = pd.concat([chart_data, forecast_data], ignore_index=True)
 
 render_panel_heading("Demand Outlook", "Compare history against the forecast path.")
@@ -58,7 +59,12 @@ forecast_fig = px.line(
     y="value",
     color="series",
     markers=True,
-    title=f"Demand Outlook for {sku} / {region}",
+    title=f"Demand Forecast for {sku} in {region}",
+    labels={
+        "date": "Date",
+        "value": "Demand Units",
+        "series": "Data Type",
+    },
     color_discrete_sequence=["#21D4FD", "#FF5D8F"],
 )
 st.plotly_chart(
@@ -79,6 +85,6 @@ render_note_box(
 candidate_price = st.number_input("Candidate Price", min_value=1.0, value=float(history["avg_price"].tail(7).mean()), step=0.5)
 scenario = service.price_what_if(sku, candidate_price)
 col1, col2, col3 = st.columns(3)
-col1.metric("Expected Demand", f"{scenario['expected_demand']:.2f}")
-col2.metric("Expected Revenue", f"${scenario['expected_revenue']:.2f}")
-col3.metric("Elasticity", f"{scenario['price_elasticity']:.2f}")
+col1.metric("Projected Demand", f"{scenario['expected_demand']:.2f}")
+col2.metric("Projected Revenue", f"${scenario['expected_revenue']:.2f}")
+col3.metric("Price Elasticity", f"{scenario['price_elasticity']:.2f}")
