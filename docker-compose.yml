@@ -1,0 +1,149 @@
+version: "3.9"
+
+x-app-environment: &app-environment
+  PYTHONPATH: /app
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-replace-with-a-real-secret}
+  API_KEYS: '["neuralretail-local-key"]'
+  SERVICE_USERNAME: ${SERVICE_USERNAME:-admin}
+  SERVICE_PASSWORD: ${SERVICE_PASSWORD:-admin123}
+  DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/neuralretail
+  REDIS_URL: redis://redis:6379/0
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_ACCESS_KEY: minio
+  S3_SECRET_KEY: minio123
+  S3_BUCKET: neuralretail
+
+services:
+  api:
+    build: .
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/app
+    depends_on:
+      - postgres
+      - redis
+      - mlflow
+
+  dashboard:
+    build: .
+    command: streamlit run src/dashboard/Home.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/app
+    depends_on:
+      - api
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_DB: neuralretail
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  mlflow:
+    build: .
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /app/artifacts/mlruns
+    ports:
+      - "5000:5000"
+    environment:
+      <<: *app-environment
+    volumes:
+      - ./:/app
+
+  airflow-init:
+    image: apache/airflow:2.9.3-python3.12
+    profiles: ["mlops"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/dags:/opt/airflow
+    volumes:
+      - ./src/mlops/airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow
+    command: airflow db init
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3-python3.12
+    profiles: ["mlops"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/dags:/opt/airflow
+    depends_on:
+      - airflow-init
+    volumes:
+      - ./src/mlops/airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow
+    command: airflow webserver
+    ports:
+      - "8080:8080"
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3-python3.12
+    profiles: ["mlops"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/dags:/opt/airflow
+    depends_on:
+      - airflow-webserver
+    volumes:
+      - ./src/mlops/airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow
+    command: airflow scheduler
+
+  prometheus:
+    image: prom/prometheus:latest
+    command: --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  minio_data:

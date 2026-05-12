@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[project]
+name = "neuralretail"
+version = "1.0.0"
+description = "AI Sales Intelligence & Predictive Analytics Platform"
+requires-python = ">=3.12"

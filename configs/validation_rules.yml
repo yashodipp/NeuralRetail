@@ -1,0 +1,12 @@
+business_targets:
+  demand_forecast_mape_max: 10.0
+  churn_auc_min: 0.90
+  processing_target:
+    max_minutes: 4
+    minimum_transactions: 15000000
+  drift_detection_psi_max: 0.2
+  api_latency_seconds_max: 1.5
+
+retrain_policy:
+  psi_trigger: 0.2
+  mape_trigger: 15.0

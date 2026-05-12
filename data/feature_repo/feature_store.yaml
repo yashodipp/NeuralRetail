@@ -1,0 +1,9 @@
+project: neuralretail
+registry: data/feature_repo/registry.db
+provider: local
+online_store:
+  type: redis
+  connection_string: redis:6379
+offline_store:
+  type: file
+entity_key_serialization_version: 2
